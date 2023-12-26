@@ -1,12 +1,55 @@
-from PIL import Image 
-from pytesseract import pytesseract 
-import cv2
 import pandas as pd
 from datetime import datetime, timedelta
 
+text = '''Monday
+ENGL 140:  Comm B Topics in English Literature
+DIS 305
+7117 Helen C. White Hall
+12:05 PM to 12:55 PM
 
-# could definitely optimize it further by making the day of week checker better with hashmap maybe? also can combine discussion and lecture
-# checker, and just have a varaible thats lecture or discussion
+Tuesday
+COMP SCI 540:  Introduction to Artificial Intelligence
+LEC 002
+1310 Sterling Hall
+11:00 AM to 12:15 PM
+
+COMP SCI 577:  Introduction to Algorithms
+LEC 002
+S413 Chemistry Building
+1:00 PM to 2:15 PM
+
+ENGL 140:  Comm B Topics in English Literature
+LEC 001
+1520 Microbial Sciences
+9:55 AM to 10:45 AM
+
+Wednesday
+COMP SCI 577:  Introduction to Algorithms
+DIS 322
+2239 Engineering Hall
+11:00 AM to 11:50 AM
+
+ENGL 140:  Comm B Topics in English Literature
+DIS 305
+7117 Helen C. White Hall
+12:05 PM to 12:55 PM
+
+Thursday
+COMP SCI 540:  Introduction to Artificial Intelligence
+LEC 002
+1310 Sterling Hall
+11:00 AM to 12:15 PM
+
+COMP SCI 577:  Introduction to Algorithms
+LEC 002
+S413 Chemistry Building
+1:00 PM to 2:15 PM
+
+ENGL 140:  Comm B Topics in English Literature
+LEC 001
+1520 Microbial Sciences
+9:55 AM to 10:45 AM'''
+
 
 # sample datetime, when i make it into a website have an input for it
 date_format = '%m-%d-%Y'
@@ -16,16 +59,16 @@ dt_end = datetime.strptime('12-20-2022', date_format).date()
 weekdayofstart = dt_start.weekday()
 
 weekdayToLetter = {
-    "M": 0,
-    "T": 1,
-    "W": 2,
-    "R": 3,
-    "F": 4,
-    "S": 5,
-    "S": 6
+    "Monday": 0,
+    "Tuesday": 1,
+    "Wednesday": 2,
+    "Thursday": 3,
+    "Friday": 4,
+    "Saturday": 5,
+    "Sunday": 6
 }
 
-# day is a MWF or something
+days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
 def getStartingDate(day):
 
@@ -35,48 +78,35 @@ def getStartingDate(day):
 print(dt_start)
 print(dt_end)
 
-def putCourse(line, type, name, df):
-    info = line.split(" ")
 
-    classDays = info[1]
-    times = (info[2]+info[3]+info[4]).split("-")
-    startTime = times[0]
-    endTime = times[1]
-
-    for day in classDays:
-        if(day == "_"):
-            continue
-        else:
-            date = getStartingDate(day)
-            df.loc[len(df.index)] = [name, date, startTime[:-2] + " " + startTime[-2:], date, endTime[:-2] + " " + endTime[-2:], "FALSE", "{} for {}".format(type, name), None, 'FALSE']
-
-def parseAllInfo(text):
+def parseText(text):
     df = pd.DataFrame(columns=["Subject", "Start Date", "Start Time", "End Date", 
-                               "End Time", "All Day Event", "Description", "Location", "Private"])
+                                "End Time", "All Day Event", "Description", "Location", "Private"])
     
-    lines = text.splitlines()
+    blocks = text.split('\n\n')
 
-    currCourse = None
+    course = None
+    offset = 0
 
-    for line in lines:
+    for block in blocks:
+        lines = block.split('\n')
 
-        #we have found a new course
-        if(line.find("credit") != -1):
-            #if(line != lines[0]):
-            currCourse = line[:-13] if line.find("credits") != -1 else line[:-12]
+        if('day' in lines[0]):
+            if any(lines[0] == d for d in days):
+                day = lines[0]
+                offset = 1
 
-        elif(line.find("LEC") == 0):
-            if(line.find("Online") != -1):
-                continue
-            else:
-                putCourse(line, "Lecture", currCourse, df)
+        course = lines[0 + offset][:lines[0 + offset].index(":"):]
 
-        #we have found the discussion line of info
-        elif(line.find("DIS") == 0):
-            putCourse(line, "Discussion", currCourse, df)
+        times = lines[3 + offset].split(' to ')
+        start_time = times[0]
+        end_time = times[1]
+
+        date = getStartingDate(day)
+        df.loc[len(df.index)] = [course, date, start_time, date, end_time, 'FALSE', '{} for {}'.format(lines[1+offset][:3], course), lines[2+offset], 'FALSE']
+        offset = 0
 
     return df
-
 
 def repeat_events(df):
     repeated_df = pd.DataFrame(columns=df.columns)
@@ -109,13 +139,6 @@ def repeat_events(df):
 
     return repeated_df
 
-
-# Passing the image object to image_to_string() function 
-# This function will extract the text from the image 
-img = cv2.imread(r"images/try1.png", 0)
-text = pytesseract.image_to_string(img) 
-df = parseAllInfo(text)
-
+df = parseText(text)
 df = repeat_events(df)
-
-df.to_csv('calEx1.csv', index=False)
+df.to_csv('calendar_example.csv', index=False)
