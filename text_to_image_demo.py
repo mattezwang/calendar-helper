@@ -52,11 +52,16 @@ LEC 001
 
 
 # sample datetime, when i make it into a website have an input for it
-date_format = '%m-%d-%Y'
-dt_start = datetime.strptime('09-06-2022', date_format).date()
-dt_end = datetime.strptime('12-20-2022', date_format).date()
+date_format = '%Y%m%dT%I%M%S'
+
+str_start = '20220906T120000'
+str_end = '20221220T120000'
+dt_start = datetime.strptime(str_start, date_format).date()
+dt_end = datetime.strptime(str_end, date_format).date()
 
 weekdayofstart = dt_start.weekday()
+
+CalendarName = 'cal.ics'
 
 weekdayToLetter = {
     "Monday": 0,
@@ -70,18 +75,17 @@ weekdayToLetter = {
 
 days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
+# DATETIME RETURN 
 def getStartingDate(day):
-
     offset = weekdayToLetter[day] - weekdayofstart
-    return dt_start + timedelta(days=offset) if offset > 0 else dt_start + timedelta(days=(7+offset))
+    return (dt_start + timedelta(days=offset) if offset > 0 else dt_start + timedelta(days=(7+offset)))
 
-print(dt_start)
-print(dt_end)
-
+# STRING RETURN
+def convertDateFormat(time):
+    return time.strftime('%Y%m%dT%I%M%S')[:-6]
 
 def parseText(text):
-    df = pd.DataFrame(columns=["Subject", "Start Date", "Start Time", "End Date", 
-                                "End Time", "All Day Event", "Description", "Location", "Private"])
+    df = pd.DataFrame(columns=["Subject", "Start", "End", "Description", "Location"])
     
     blocks = text.split('\n\n')
 
@@ -98,47 +102,47 @@ def parseText(text):
 
         course = lines[0 + offset][:lines[0 + offset].index(":"):]
 
+        # this seperates times into ['X:XX AM', 'XX:XX PM'] 
         times = lines[3 + offset].split(' to ')
-        start_time = times[0]
-        end_time = times[1]
 
+        # this seperates it into ['X', 'XX AM']
+        start_time = times[0].split(":")
+        end_time = times[1].split(":")
+
+        # makes it so its converted into millitary time
+        if(times[0][-2:] == 'PM' and start_time[0] != '12'):
+            start_time[0] = int(start_time[0]) + 12
+            end_time[0] = int(end_time[0]) + 12
+        elif(times[1][-2:] == 'PM' and end_time[0] != '12'):
+            end_time[0] = int(end_time[0]) + 12
+        
+        # this is a datetime object
         date = getStartingDate(day)
-        df.loc[len(df.index)] = [course, date, start_time, date, end_time, 'FALSE', '{} for {}'.format(lines[1+offset][:3], course), lines[2+offset], 'FALSE']
-        offset = 0
+        st = "{}{}00".format(start_time[0], start_time[1][:2]).rjust(6, "0")
+        et = "{}{}00".format(end_time[0], end_time[1][:2]).rjust(6, "0")
 
+
+        df.loc[len(df.index)] = [course, convertDateFormat(date)+st, convertDateFormat(date)+et, '{} for {}'.format(lines[1+offset][:3], course), lines[2+offset]]
+        offset = 0
     return df
 
-def repeat_events(df):
-    repeated_df = pd.DataFrame(columns=df.columns)
-
-    for index, row in df.iterrows():
-        start_date = row['Start Date']
-        i = 0
-
-        new_date = start_date + timedelta(weeks=i)
-
-        while(dt_start <= new_date <= dt_end):
-
-            repeated_df = pd.concat([
-                repeated_df,
-                pd.DataFrame({
-                    'Subject': row['Subject'],
-                    'Start Date': new_date,
-                    'Start Time': row['Start Time'],
-                    'End Date': new_date,
-                    'End Time': row['End Time'],
-                    'All Day Event': row['All Day Event'],
-                    'Description': row['Description'],
-                    'Location': row['Location'],
-                    'Private': row['Private']
-                }, index=[0])
-            ])
-
-            i+=1
-            new_date = start_date + timedelta(weeks=i)
-
-    return repeated_df
-
 df = parseText(text)
-df = repeat_events(df)
-df.to_csv('calendar_example.csv', index=False)
+
+F = open(CalendarName, "w")
+F.write("BEGIN:VCALENDAR\nPRODID:-ICSUW//MW//EN\nMETHOD:PUBLISH\nX-MS-OLK-FORCEINSPECTOROPEN:TRUE\nX-WR-CALNAME;VALUE=TEXT:" + CalendarName + "\n")
+for index, row in df.iterrows():
+    F.write("BEGIN:VEVENT\nCLASS:PUBLIC\n")
+    F.write("DESCRIPTION:" + str(row['Description']) + "\n")
+    F.write("LOCATION:" + row['Location'] + "\n")
+    # F.write("DTSTAMP:" + row['Start Date'] + "T" + str(row['Start Time'])  + "\n")
+    F.write("DTSTART:" + row['Start'] + "\n")
+    F.write("DTEND:" + row['End'] + "\n")
+    F.write("RRULE:FREQ=WEEKLY;UNTIL=" + str_end + "\n")
+    F.write("UID:" + str(row['Subject']) + str(row['Start']) + str(row['End']) + "\n")
+    F.write("PRIORITY:5" + "\n")
+    F.write("SEQUENCE:0" + "\n")
+    F.write("SUMMARY;LANGUAGE=en-us:" + str(row['Subject']) + "\n")
+    F.write("X-MICROSOFT-CDO-ALLDAYEVENT:FALSE\nX-MICROSOFT-MSNCALENDAR-ALLDAYEVENT:FALSE\n")
+    F.write("END:VEVENT" + "\n")
+
+F.write("END:VCALENDAR")
