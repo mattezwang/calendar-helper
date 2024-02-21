@@ -3,11 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>UW-Madison course converter</title>
+    <link rel= "stylesheet" type= "text/css" href= "./styles.css">
+
 </head>
 <body>
-    <h1>UW-Madison Calendar Converter</h1>
-    <h6>This site converts UW-Madison course schedules into something you can use with Google Calendar. </h6>
+
+    <div class="top">
+        <h1>UW-Madison Calendar Converter</h1>
+        <h3>This site converts UW-Madison course schedules into something you can import into multiple online calendars.</h3>
+    </div>
+
+    <div class="row">
+        <div class="column">
+            <h1>Convert</h1>
+                <div class="dates">
+                    <div>
+                        <label for="start_date"><h3>Start Date:</h3></label>
+                        <input type="date" id="start_date" name="start_date"/>
+                    </div>
+                    <div>
+                        <label for="end_date"><h3>End Date:</h3></label>
+                        <input type="date" id="end_date" name="end_date"/>
+                    </div>
+                </div>
+
+            <label for="input_text"><h3>Input text:</h3></label>
+            <textarea id="input_text" name="input_text" rows="15" cols="70" placeholder="Paste text here"></textarea>
+
+            <button class="convert">Convert!</button>
+        </div>
+        <div class="column">
+            <h1>How to use</h1>
+            <p>1. Navigate to your MyUW home page and click the Course Schedule tab.</p>
+            <p>2. Locate the text underneath the calendar, and copy it all to your clipboard.</p>
+            <p>3. On this page, paste the text into the textbox on the left. 
+                Select the range of dates you want the entries to populate on your calendar 
+                (Typically the start and end of the semester) and click convert!
+            <p>4. Import the returned file into Google Calendar, Apple Calendar, etc. You should your class schedule on your calendar now!</p>
+        </div>
+      </div>
+      
     
 </body>
 </html>

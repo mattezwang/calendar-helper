@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:opsz@6..12&display=swap');
+
+body {
+    font-family: 'Nunito Sans', sans-serif;
+}
+
+.row {
+    display: flex;
+  }
+  
+  .column {
+    flex: 50%;
+    margin-right: 3%;
+    margin-left: 3%;
+
+  }
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+input[type="date"] {
+    padding: 5%;
+    box-sizing: border-box;
+    width: 17.5rem;
+}
+.dates {
+    display:flex;
+    justify-content: space-between;
+}
+
+.convert {
+    background-color: limegreen;
+    width: 20%;
+    height: 7.5%;
+    border-radius: 10%;
+    font-size: 100%;
+    margin-top: 5%;
+}
+
+img {
+    display: block;
+    margin: 0 auto;
+    max-width: 25%;
+}
+
+.top {
+    margin-top: 3%;
+    margin-right: 3%;
+    margin-left: 3%;
+}
